@@ -248,7 +248,7 @@ def get_insights(recipe: dict, client: OpenAI) -> RecetaInsights:
 Receta a analizar:
 {recipe_text}"""}
         ],
-        response_format={{"type": "json_object"}}
+        response_format={"type": "json_object"}
     )
     data = json.loads(completion.choices[0].message.content)
     # Normalizamos campos por si el LLM usó nombres en inglés
