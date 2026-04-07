@@ -228,44 +228,48 @@ def render_recipe_text(recipe: dict) -> str:
 
 def get_insights(recipe: dict, client: OpenAI) -> RecetaInsights:
     recipe_text = render_recipe_text(recipe)
+    json_template = (
+        '{\n'
+        '  "nombre": "nombre del platillo",\n'
+        '  "tiempo_minutos": 30,\n'
+        '  "dificultad": "Facil",\n'
+        '  "ingredientes_clave": ["ingrediente1", "ingrediente2"],\n'
+        '  "resumen": "descripcion breve en 2 oraciones",\n'
+        '  "consejo_chef": "un consejo practico",\n'
+        '  "sustituciones": ["sustitucion1", "sustitucion2"],\n'
+        '  "apto_para": ["perfil1", "perfil2"],\n'
+        '  "puntuacion_facilidad": 8\n'
+        '}'
+    )
+    prompt = (
+        "Analiza esta receta y responde EXACTAMENTE con este JSON "
+        "(todos los campos en espanol, con estos nombres exactos):\n\n"
+        + json_template
+        + "\n\nReceta a analizar:\n"
+        + recipe_text
+    )
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "Eres un chef experto en cocina mexicana. Responde SOLO con JSON valido, sin texto adicional."},
-            {"role": "user", "content": f"""Analiza esta receta y responde EXACTAMENTE con este JSON (todos los campos en español, con estos nombres exactos):
-{{
-  "nombre": "nombre del platillo",
-  "tiempo_minutos": 30,
-  "dificultad": "Fácil",
-  "ingredientes_clave": ["ingrediente1", "ingrediente2"],
-  "resumen": "descripción breve y apetitosa en 2 oraciones",
-  "consejo_chef": "un consejo práctico",
-  "sustituciones": ["sustitución1", "sustitución2"],
-  "apto_para": ["perfil1", "perfil2"],
-  "puntuacion_facilidad": 8
-}}
-
-Receta a analizar:
-{recipe_text}"""}
+            {"role": "user", "content": prompt}
         ],
         response_format={"type": "json_object"}
     )
     data = json.loads(completion.choices[0].message.content)
-    # Normalizamos campos por si el LLM usó nombres en inglés
-    field_map = {{
+    field_map = {
         "name": "nombre", "title": "nombre",
-        "time_minutes": "tiempo_minutos", "ready_in_minutes": "tiempo_minutos",
+        "time_minutes": "tiempo_minutos",
         "difficulty": "dificultad",
-        "key_ingredients": "ingredientes_clave", "main_ingredients": "ingredientes_clave",
+        "key_ingredients": "ingredientes_clave",
         "summary": "resumen", "description": "resumen",
         "chef_tip": "consejo_chef", "tip": "consejo_chef",
         "substitutions": "sustituciones",
-        "suitable_for": "apto_para", "good_for": "apto_para",
-        "ease_score": "puntuacion_facilidad", "ease": "puntuacion_facilidad"
-    }}
-    normalized = {{field_map.get(k, k): v for k, v in data.items()}}
-    # Valores por defecto si falta algún campo
-    defaults = {{
+        "suitable_for": "apto_para",
+        "ease_score": "puntuacion_facilidad"
+    }
+    normalized = {field_map.get(k, k): v for k, v in data.items()}
+    defaults = {
         "nombre": recipe.get("title", "Receta"),
         "tiempo_minutos": recipe.get("readyInMinutes", 30),
         "dificultad": "Media",
@@ -275,7 +279,7 @@ Receta a analizar:
         "sustituciones": [],
         "apto_para": [],
         "puntuacion_facilidad": 5
-    }}
+    }
     defaults.update(normalized)
     return RecetaInsights(**defaults)
 
