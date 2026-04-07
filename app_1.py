@@ -233,7 +233,7 @@ def get_insights(recipe: dict, client: OpenAI) -> RecetaInsights:
         messages=[
             {"role": "system", "content": "Eres un chef experto en cocina mexicana. Responde SOLO con JSON valido, sin texto adicional."},
             {"role": "user", "content": f"""Analiza esta receta y responde EXACTAMENTE con este JSON (todos los campos en español, con estos nombres exactos):
-{{
+{
   "nombre": "nombre del platillo",
   "tiempo_minutos": 30,
   "dificultad": "Fácil",
@@ -243,7 +243,7 @@ def get_insights(recipe: dict, client: OpenAI) -> RecetaInsights:
   "sustituciones": ["sustitución1", "sustitución2"],
   "apto_para": ["perfil1", "perfil2"],
   "puntuacion_facilidad": 8
-}}
+}
 
 Receta a analizar:
 {recipe_text}"""}
@@ -252,7 +252,7 @@ Receta a analizar:
     )
     data = json.loads(completion.choices[0].message.content)
     # Normalizamos campos por si el LLM usó nombres en inglés
-    field_map = {{
+    field_map = {
         "name": "nombre", "title": "nombre",
         "time_minutes": "tiempo_minutos", "ready_in_minutes": "tiempo_minutos",
         "difficulty": "dificultad",
@@ -262,10 +262,10 @@ Receta a analizar:
         "substitutions": "sustituciones",
         "suitable_for": "apto_para", "good_for": "apto_para",
         "ease_score": "puntuacion_facilidad", "ease": "puntuacion_facilidad"
-    }}
-    normalized = {{field_map.get(k, k): v for k, v in data.items()}}
+    }
+    normalized = {field_map.get(k, k): v for k, v in data.items()}
     # Valores por defecto si falta algún campo
-    defaults = {{
+    defaults = {
         "nombre": recipe.get("title", "Receta"),
         "tiempo_minutos": recipe.get("readyInMinutes", 30),
         "dificultad": "Media",
@@ -275,7 +275,7 @@ Receta a analizar:
         "sustituciones": [],
         "apto_para": [],
         "puntuacion_facilidad": 5
-    }}
+    }
     defaults.update(normalized)
     return RecetaInsights(**defaults)
 
